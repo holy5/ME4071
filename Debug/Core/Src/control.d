@@ -1,5 +1,5 @@
-Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
- ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h \
+Core/Src/control.o: ../Core/Src/control.c ../Core/Inc/control.h \
+ ../Core/Inc/main.h ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h \
  ../Core/Inc/stm32f1xx_hal_conf.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h \
@@ -25,10 +25,9 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
- ../Core/Inc/motor.h ../Core/Inc/main.h ../Core/Inc/moving_average.h \
- ../Core/Inc/line_sensor.h ../Core/Inc/motor.h ../Core/Inc/color_sensor.h \
- ../Core/Inc/control.h ../Core/Inc/line_sensor.h ../Core/Inc/pid.h \
- ../Core/Inc/pid.h
+ ../Core/Inc/line_sensor.h ../Core/Inc/motor.h ../Core/Inc/pid.h \
+ ../Core/Inc/constants.h ../Core/Inc/utils.h ../Core/Inc/pid.h
+../Core/Inc/control.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 ../Core/Inc/stm32f1xx_hal_conf.h:
@@ -56,13 +55,9 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
-../Core/Inc/motor.h:
-../Core/Inc/main.h:
-../Core/Inc/moving_average.h:
 ../Core/Inc/line_sensor.h:
 ../Core/Inc/motor.h:
-../Core/Inc/color_sensor.h:
-../Core/Inc/control.h:
-../Core/Inc/line_sensor.h:
 ../Core/Inc/pid.h:
+../Core/Inc/constants.h:
+../Core/Inc/utils.h:
 ../Core/Inc/pid.h:

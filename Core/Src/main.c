@@ -26,6 +26,8 @@
 #include "math.h"
 #include "line_sensor.h"
 #include "color_sensor.h"
+#include "control.h"
+#include "pid.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -151,7 +153,7 @@ lineSensorParams_st line_sensor ={
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 	send_flag=1;
-	if(htim->Instance == TIM3){
+	if(htim->Instance == htim3.Instance){
 	motor_readEncoder(&motor_1);
 //	Freq = 100kHz 1 tick = 1e-5
 	current_time = overflow_time*200 + __HAL_TIM_GET_COUNTER(&htim2);
@@ -161,7 +163,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 		motor_1.rpm = Moving_Average_Compute(motor_1.rpm, &filter_struct);
 		}
 	}
-	else if(htim->Instance == TIM4){
+	else if(htim->Instance == htim4.Instance){
 		motor_readEncoder(&motor_2);
 	//	Freq = 100kHz 1 tick = 1e-5
 		current_time = overflow_time*200 + __HAL_TIM_GET_COUNTER(&htim4);
@@ -235,19 +237,37 @@ int main(void)
   color_sensor_init(&color_sensor);
 
 
-  PIDParams_st pid_params;
-  	pid_params.Kp=1.12;
-  	pid_params.Ki=0.002;
-  	pid_params.Kd=30;
-  	pid_params.Outmin=20;
-  	pid_params.Outmax=100;
-  	pid_params.enable_anti_windup=1;
-  	pid_params.Anti_windup_error=40;
-
-  pid_init(&pid_params);
-
-//  motor_setMotorPWM(&motor_1,100);
-//  motor_setMotorPWM(&motor_2,100);
+  PIDParams_st pid_params_lw;
+  	pid_params_lw.Kp = 1.12;
+  	pid_params_lw.Ki = 0.002;
+  	pid_params_lw.Kd = 30;
+  	pid_params_lw.outmin = 20;
+  	pid_params_lw.outmax = 100;
+  	pid_params_lw.enable_anti_windup = 1;
+  	pid_params_lw.anti_windup_error = 40;
+  	pid_params_lw.error_sum = 0;
+  	pid_params_lw.prev_error = 0;
+  	pid_params_lw.prev_time = 0;
+  	pid_params_lw.setpoint = 200;
+  PIDParams_st pid_params_rw;
+	pid_params_rw.Kp = 1.12;
+	pid_params_rw.Ki = 0.002;
+	pid_params_rw.Kd = 30;
+	pid_params_rw.outmin = 20;
+	pid_params_rw.outmax = 100;
+	pid_params_rw.enable_anti_windup = 1;
+	pid_params_rw.anti_windup_error = 40;
+  	pid_params_rw.error_sum = 0;
+  	pid_params_rw.prev_error = 0;
+  	pid_params_rw.prev_time = 0;
+control_st control_p;
+	control_p.k1 = 0.2;
+	control_p.k2 = 120;
+	control_p.k2 = 0.8;
+	motor_setMotorPWM(&motor_1,00);
+//	motor_setMotorPWM(&motor_2,100);
+	PIDParams_st* ps[] = {&pid_params_lw, &pid_params_rw};
+	motorParams_st* mtrs[] = {&motor_1, &motor_2};
 
   /* USER CODE END 2 */
 
@@ -326,7 +346,7 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
@@ -537,7 +557,7 @@ static void MX_TIM3_Init(void)
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
@@ -586,7 +606,7 @@ static void MX_TIM4_Init(void)
   htim4.Init.Period = 65535;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;

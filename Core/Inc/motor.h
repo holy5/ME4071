@@ -30,23 +30,6 @@ typedef struct{
 	TIM_HandleTypeDef* enc_htim;
 }motorParams_st;
 
-typedef struct{
-	float Kp;
-	float Ki;
-	float Kd;
-	int enable_anti_windup;
-	float Anti_windup_error;
-	float Outmin;
-	float Outmax;
-	int Anti_windup;
-	int is_sat;
-	int is_same_sign;
-}PIDParams_st;
-
-void pid_init(PIDParams_st *p);
-
-float pid_calculation(float set_point, float current);
-
 void motor_init(motorParams_st* motor_params);
 
 void motor_stopMotor(motorParams_st* motor_params);

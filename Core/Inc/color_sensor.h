@@ -26,8 +26,6 @@ typedef struct{
 
 void color_sensor_init(colorSensor_st* p);
 
-void colorsensor_read(colorSensor_st* p);
-
 void colorsensor_detectColor(colorSensor_st* p);
 
 #endif /* INC_COLOR_SENSOR_H_ */

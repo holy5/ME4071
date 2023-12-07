@@ -29,15 +29,15 @@ static float linesensor_calculateDs(motorParams_st* mp, lineSensorParams_st* p){
 
 void linesensor_read(lineSensorParams_st* p,motorParams_st* mp){
       HAL_ADC_Start_DMA(p->hadc,(uint32_t*)p->adc_values,5);
-      p->sensor_values[0]=233+(3037/3154*(p->adc_values[0]-235));
-      p->sensor_values[1]=233+(3037/3028*(p->adc_values[1]-230));
-      p->sensor_values[2]=233+(3037/3021*(p->adc_values[2]-226));
-      p->sensor_values[3]=233+(3037/3068*(p->adc_values[3]-234));
-      p->sensor_values[4]=233+(3037/3068*(p->adc_values[4]-240));
+      p->sensor_values[0]=233+(3037.0f/3154.0f*(p->adc_values[0]-235));
+      p->sensor_values[1]=233+(3037.0f/3028.0f*(p->adc_values[1]-230));
+      p->sensor_values[2]=233+(3037.0f/3021.0f*(p->adc_values[2]-226));
+      p->sensor_values[3]=233+(3037.0f/3068.0f*(p->adc_values[3]-234));
+      p->sensor_values[4]=233+(3037.0f/3068.0f*(p->adc_values[4]-240));
 
       p->time = HAL_GetTick(); // this should be converted to time
 
-      p->y_error = linesensor_calulateAngleError(p)/1000; //(mm->m)
+      p->y_error = linesensor_calulateAngleError(p); //mm
 
       float ds = linesensor_calculateDs(mp,p);
 

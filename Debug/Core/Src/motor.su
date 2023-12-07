@@ -5,6 +5,4 @@
 ../Core/Src/motor.c:27:6:motor_setMotorPWM	16	static
 ../Core/Src/motor.c:40:6:motor_readEncoder	16	static
 ../Core/Src/motor.c:46:6:motor_calculateRPM	24	static
-../Core/Src/motor.c:61:6:pid_init	16	static
-../Core/Src/motor.c:76:7:pid_calculation	32	static
-../Core/Src/motor.c:121:6:motor_calculateSpeed	16	static
+../Core/Src/motor.c:53:6:motor_calculateSpeed	16	static

@@ -1,0 +1,2 @@
+../Core/Src/control.c:14:22:control_calculateWheelsRPM	64	static
+../Core/Src/control.c:28:6:control_lineTracking	48	static
