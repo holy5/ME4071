@@ -156,8 +156,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 	if(htim->Instance == htim3.Instance){
 	motor_readEncoder(&motor_1);
 //	Freq = 100kHz 1 tick = 1e-5
-	current_time = overflow_time*200 + __HAL_TIM_GET_COUNTER(&htim2);
-	if(motor_1.position!=prev_position_1){
+	current_time = overflow_time * htim1.Init.Period + __HAL_TIM_GET_COUNTER(&htim1);
+	if(motor_1.position != prev_position_1){
 		motor_calculateRPM(&motor_1, current_time);
 		prev_position_1  = motor_1.position;
 		motor_1.rpm = Moving_Average_Compute(motor_1.rpm, &filter_struct);
@@ -166,8 +166,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 	else if(htim->Instance == htim4.Instance){
 		motor_readEncoder(&motor_2);
 	//	Freq = 100kHz 1 tick = 1e-5
-		current_time = overflow_time*200 + __HAL_TIM_GET_COUNTER(&htim4);
-		if(motor_2.position!=prev_position_2){
+		current_time = overflow_time * htim1.Init.Period + __HAL_TIM_GET_COUNTER(&htim1);
+		if(motor_2.position != prev_position_2){
 			motor_calculateRPM(&motor_2, current_time);
 			prev_position_2  = motor_2.position;
 			motor_2.rpm = Moving_Average_Compute(motor_2.rpm, &filter_struct);
@@ -177,7 +177,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	UNUSED(htim);
-	if(htim->Instance == TIM1){
+	if(htim->Instance == htim1.Instance){
 		overflow_time ++;
 	}
 }
@@ -219,6 +219,7 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim1);
+  HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
 
   motor_1.htim = &htim1;
   motor_2.htim = &htim1;
@@ -264,8 +265,8 @@ control_st control_p;
 	control_p.k1 = 0.2;
 	control_p.k2 = 120;
 	control_p.k2 = 0.8;
-	motor_setMotorPWM(&motor_1,00);
-//	motor_setMotorPWM(&motor_2,100);
+//	motor_setMotorPWM(&motor_1,50);
+//	motor_setMotorPWM(&motor_2,50);
 	PIDParams_st* ps[] = {&pid_params_lw, &pid_params_rw};
 	motorParams_st* mtrs[] = {&motor_1, &motor_2};
 
@@ -276,7 +277,7 @@ control_st control_p;
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  linesensor_read(&line_sensor,&motor_1);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -346,7 +347,7 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
-  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
@@ -429,15 +430,12 @@ static void MX_TIM1_Init(void)
   htim1.Init.Period = 200-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
   }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_ETRMODE2;
-  sClockSourceConfig.ClockPolarity = TIM_CLOCKPOLARITY_NONINVERTED;
-  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
-  sClockSourceConfig.ClockFilter = 0;
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
   if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
