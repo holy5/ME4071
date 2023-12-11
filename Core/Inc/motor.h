@@ -9,9 +9,6 @@
 #ifndef INC_MOTOR_H_
 #define INC_MOTOR_H_
 
-#define STBY_PIN GPIO_PIN_14
-#define STBY_PORT GPIOB
-
 typedef struct{
 	uint16_t pulse_per_rev;
 	uint32_t ucount;
