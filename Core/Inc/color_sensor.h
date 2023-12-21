@@ -10,6 +10,8 @@
 #ifndef INC_COLOR_SENSOR_H_
 #define INC_COLOR_SENSOR_H_
 
+enum ColorFilter{F_RED, F_BLUE, F_GREEN, F_CLEAR};
+enum Color {C_RED, C_BLUE, C_GREEN, C_NONE};
 
 typedef struct{
 	uint16_t in_pins[4];
@@ -20,11 +22,12 @@ typedef struct{
 	TIM_HandleTypeDef* htim;
 	uint16_t tim_channel;
 	uint16_t rgb[3];
-	char color;
+	enum Color color;
 }colorSensor_st;
 
-
 void color_sensor_init(colorSensor_st* p);
+
+void colorsensor_setFilter(colorSensor_st* p,uint8_t filter);
 
 void colorsensor_detectColor(colorSensor_st* p);
 

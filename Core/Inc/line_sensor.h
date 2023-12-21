@@ -25,6 +25,6 @@ typedef struct{
 
 float linesensor_calculateYError(lineSensorParams_st* p);
 //float linesensor_calulateAngleError(lineSensorParams_st* p);
-void  linesensor_read(lineSensorParams_st* p,motorParams_st* mp);
+void  linesensor_read(lineSensorParams_st* p);
 
 #endif /* INC_LINE_SENSOR_H_ */

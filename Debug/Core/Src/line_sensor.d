@@ -26,7 +26,7 @@ Core/Src/line_sensor.o: ../Core/Src/line_sensor.c \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
- ../Core/Inc/motor.h
+ ../Core/Inc/motor.h ../Core/Inc/constants.h
 ../Core/Inc/line_sensor.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
@@ -56,3 +56,4 @@ Core/Src/line_sensor.o: ../Core/Src/line_sensor.c \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
 ../Core/Inc/motor.h:
+../Core/Inc/constants.h:

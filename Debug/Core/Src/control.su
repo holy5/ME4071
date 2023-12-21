@@ -1,2 +1,3 @@
-../Core/Src/control.c:14:22:control_calculateWheelsRPM	64	static
-../Core/Src/control.c:28:6:control_lineTracking	48	static
+../Core/Src/control.c:10:22:control_calculateWheelsRPM	64	static
+../Core/Src/control.c:24:6:control_steerToBranch	32	static
+../Core/Src/control.c:35:6:control_lineTracking	64	static

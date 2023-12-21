@@ -22,7 +22,7 @@ typedef struct{
 	int is_same_sign;
 	float current_value;
 	float setpoint;
-	uint32_t prev_time;
+	float prev_time;
 	float prev_error;
 	int32_t error_sum;
 }PIDParams_st;

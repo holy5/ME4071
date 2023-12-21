@@ -6,6 +6,7 @@
  */
 #include "line_sensor.h"
 #include "math.h"
+#include "constants.h"
 
 float linesensor_calculateYError(lineSensorParams_st* p)
 {
@@ -16,18 +17,18 @@ float linesensor_calculateYError(lineSensorParams_st* p)
 }
 
 static float linesensor_calulateAngleError(lineSensorParams_st* p){
-	return (linesensor_calculateYError(p) - 0.6986)/(float)0.7703;
+	return (linesensor_calculateYError(p) - 0.6986)/(float)0.7703 + 1.7;
 }
 
-static float linesensor_calculateDs(motorParams_st* mp, lineSensorParams_st* p){
-	uint16_t now = HAL_GetTick();
-	uint16_t delta_time = now - p->time_prev;
-	p->time_prev = now;
+//static float linesensor_calculateDs(motorParams_st* mp, lineSensorParams_st* p){
+//	uint16_t now = HAL_GetTick();
+//	uint16_t delta_time = now - p->time_prev;
+//	p->time_prev = now;
+//
+//	return mp->speed * delta_time;
+//}
 
-	return mp->speed * delta_time;
-}
-
-void linesensor_read(lineSensorParams_st* p,motorParams_st* mp){
+void linesensor_read(lineSensorParams_st* p){
       HAL_ADC_Start_DMA(p->hadc,(uint32_t*)p->adc_values,5);
       p->sensor_values[0]=233+(3037.0f/3154.0f*(p->adc_values[0]-235));
       p->sensor_values[1]=233+(3037.0f/3028.0f*(p->adc_values[1]-230));
@@ -35,15 +36,16 @@ void linesensor_read(lineSensorParams_st* p,motorParams_st* mp){
       p->sensor_values[3]=233+(3037.0f/3068.0f*(p->adc_values[3]-234));
       p->sensor_values[4]=233+(3037.0f/3068.0f*(p->adc_values[4]-240));
 
-      p->time = HAL_GetTick(); // this should be converted to time
+//      p->time = HAL_GetTick(); // this should be converted to time
 
       p->y_error = linesensor_calulateAngleError(p); //mm
 
-      float ds = linesensor_calculateDs(mp,p);
+      float ds = VEL_REF * cos(p->angle_error) * 24e-3;
 
       p->angle_error = atan((p->angle_error-p->angle_error_prev)/ds);
       //e3 = 0;
       p->angle_error_prev = p->y_error;
+      p->angle_error =0;
 
       p->time_prev = p->time;
 }

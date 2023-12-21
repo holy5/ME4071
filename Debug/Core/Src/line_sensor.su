@@ -1,4 +1,3 @@
-../Core/Src/line_sensor.c:10:7:linesensor_calculateYError	32	static
-../Core/Src/line_sensor.c:18:14:linesensor_calulateAngleError	16	static
-../Core/Src/line_sensor.c:22:14:linesensor_calculateDs	32	static
-../Core/Src/line_sensor.c:30:6:linesensor_read	24	static
+../Core/Src/line_sensor.c:11:7:linesensor_calculateYError	32	static
+../Core/Src/line_sensor.c:19:14:linesensor_calulateAngleError	16	static
+../Core/Src/line_sensor.c:31:6:linesensor_read	24	static

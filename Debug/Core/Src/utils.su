@@ -1,1 +1,2 @@
-../Core/Src/utils.c:4:7:utils_omegaToRPM	16	static
+../Core/Src/utils.c:4:7:utils_radPerSecToRPM	16	static
+../Core/Src/utils.c:8:9:utils_inRange	24	static

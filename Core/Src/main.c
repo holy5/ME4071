@@ -27,7 +27,7 @@
 #include "line_sensor.h"
 #include "color_sensor.h"
 #include "control.h"
-#include "pid.h"
+#include "pid_controller.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -72,44 +72,35 @@ static void MX_TIM4_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+FilterTypeDef filter_struct_1;
+FilterTypeDef filter_struct_2;
 
-char pwm_buffer[10];
-char rpm_buffer[10];
-uint8_t send_flag = 0;
-int16_t pwm;
-int16_t speed=0;
-FilterTypeDef filter_struct;
-uint16_t cn=0;
-int32_t idx =0;
-const int8_t TIMER_PERIOD = 2; //2ms
-int32_t current_time=0;
-int16_t overflow_time=0;
-int16_t prev_position_1=0, prev_position_2 = 0;
-
-motorParams_st motor_1 ={
+motorParams_st motor_rw={
 	.pulse_per_rev = 234,
 	.ucount=0,
 	.scount=0,
 	.prev_time=0,
 	.rpm=0,
-	.direction=0,
-	.pwm_channel = TIM_CHANNEL_1,
+	.pwm_channel = TIM_CHANNEL_2,
 	.in1_pin = GPIO_PIN_12,
 	.in2_pin = GPIO_PIN_13,
-	.in_port = GPIOB
+	.in_port = GPIOB,
+	.htim = &htim1,
+	.enc_htim = &htim3,
 };
 
-motorParams_st motor_2 ={
-	.pulse_per_rev = 234,
+motorParams_st motor_lw ={
+	.pulse_per_rev = 495,
 	.ucount=0,
 	.scount=0,
 	.prev_time=0,
 	.rpm=0,
-	.direction=0,
-	.pwm_channel = TIM_CHANNEL_2,
+	.pwm_channel = TIM_CHANNEL_1,
 	.in1_pin = GPIO_PIN_10,
 	.in2_pin = GPIO_PIN_11,
-	.in_port = GPIOB
+	.in_port = GPIOB,
+	.htim = &htim1,
+	.enc_htim = &htim4,
 };
 
 colorSensor_st color_sensor = {
@@ -126,6 +117,7 @@ colorSensor_st color_sensor = {
 	.rgb[1]=0,
 	.rgb[2]=0,
 	.color='n',
+	.htim = &htim2
 };
 lineSensorParams_st line_sensor ={
 	.in_pins[0] = GPIO_PIN_1,
@@ -151,34 +143,99 @@ lineSensorParams_st line_sensor ={
 	.time_prev = 0,
 };
 
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
-	send_flag=1;
-	if(htim->Instance == htim3.Instance){
-	motor_readEncoder(&motor_1);
-//	Freq = 100kHz 1 tick = 1e-5
-	current_time = overflow_time * htim1.Init.Period + __HAL_TIM_GET_COUNTER(&htim1);
-	if(motor_1.position != prev_position_1){
-		motor_calculateRPM(&motor_1, current_time);
-		prev_position_1  = motor_1.position;
-		motor_1.rpm = Moving_Average_Compute(motor_1.rpm, &filter_struct);
-		}
-	}
-	else if(htim->Instance == htim4.Instance){
-		motor_readEncoder(&motor_2);
-	//	Freq = 100kHz 1 tick = 1e-5
-		current_time = overflow_time * htim1.Init.Period + __HAL_TIM_GET_COUNTER(&htim1);
-		if(motor_2.position != prev_position_2){
-			motor_calculateRPM(&motor_2, current_time);
-			prev_position_2  = motor_2.position;
-			motor_2.rpm = Moving_Average_Compute(motor_2.rpm, &filter_struct);
-			}
-		}
-}
+PIDControl pid_lw = {
+.alteredKp = 1,
+.alteredKi = 0,
+.alteredKd = 0,
+.outMin = 10,
+.outMax = 100,
+.setpoint = 150,
+.controllerDirection = DIRECT,
+.mode = AUTOMATIC,
+.input = 0,
+.lastInput = 0,
+.iTerm=0,
+};
+PIDControl pid_rw = {
+.alteredKp = 1,
+.alteredKi = 0,
+.alteredKd = 0,
+.outMin = 10,
+.outMax = 100,
+.setpoint = 150,
+.controllerDirection = DIRECT,
+.mode = AUTOMATIC,
+.input = 0,
+.lastInput = 0,
+.iTerm=0,
+};
+
+control_st control_p ={
+	.k1 = 0,
+	.k2 = 0.25,
+	.k3 = 0.1,
+	.branch = 'n',
+	.stopTime = 0
+};
+
+	PIDControl* ps[] = {&pid_lw, &pid_rw};
+	motorParams_st* mtrs[] = {&motor_lw, &motor_rw};
+	uint16_t v1,v2;
+	uint16_t diff= 0;
+	int8_t first_capture=0;
+	uint8_t timer_overflow=0;
+	uint16_t frequency;
+	float refClock = 8e6/8;
+	enum ColorFilter f_red = F_RED;
+	enum ColorFilter f_green = F_GREEN;
+	enum ColorFilter f_blue = F_BLUE;
+
+//	enum Color c_red = C_RED;
+//	enum Color c_green = C_GREEN;
+//	enum Color c_blue = C_BLUE;
+
+	enum RobotState stop = STOP;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	UNUSED(htim);
 	if(htim->Instance == htim1.Instance){
-		overflow_time ++;
+		timer_overflow++;
+		if(timer_overflow == 12){ //24ms
+			motor_readEncoder(&motor_rw);
+			motor_readEncoder(&motor_lw);
+//			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+			motor_calculateRPM(&motor_rw, 1);
+			motor_calculateRPM(&motor_lw, 1);
+			motor_rw.rpm = Moving_Average_Compute(motor_rw.rpm, &filter_struct_1);
+			motor_lw.rpm = Moving_Average_Compute(motor_lw.rpm, &filter_struct_2);
+
+			motor_odometry(&motor_lw);
+//			linesensor_read(&line_sensor);
+//			control_lineTracking(&control_p, ps, mtrs, &line_sensor);
+			timer_overflow = 0;
+		}
+	}
+}
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim){
+	if (htim->Instance == htim2.Instance && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1){
+		//Check Green
+		if (first_capture==0)
+			{
+				v1 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1);
+				first_capture = 1;
+			} else if (first_capture==1){
+				v2 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1);
+			if (v2 > v1){
+				diff = v2-v1;
+			}else if (v1 > v2){
+				diff = (65535 - v1) + v2;
+			}
+
+			frequency = refClock/diff;
+			first_capture= 0;
+			__HAL_TIM_SET_COUNTER(&htim2, 0);
+			}
 	}
 }
 /* USER CODE END 0 */
@@ -219,56 +276,30 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim1);
-  HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
+//  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 
-  motor_1.htim = &htim1;
-  motor_2.htim = &htim1;
-  motor_1.enc_htim = &htim3;
-  motor_2.enc_htim = &htim4;
+
+  HAL_TIM_Encoder_Start_IT(&htim3, TIM_CHANNEL_ALL);
+  HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
+  Moving_Average_Init(&filter_struct_1);
+  Moving_Average_Init(&filter_struct_2);
+
+  motor_init(&motor_rw);
+  motor_init(&motor_lw);
+  color_sensor_init(&color_sensor);
+
+
 
   line_sensor.hadc = &hadc1;
   color_sensor.htim = &htim2;
 
-  HAL_TIM_Encoder_Start_IT(&htim3, TIM_CHANNEL_ALL);
-  HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
-  Moving_Average_Init(&filter_struct);
 
-  motor_init(&motor_1);
-  motor_init(&motor_2);
-  color_sensor_init(&color_sensor);
+  PIDInit(&pid_lw,1.8,0.8,0.1,0.024,10,100,AUTOMATIC,DIRECT);
+  PIDInit(&pid_rw,1.3,0.35,0.08,0.024,10,100,AUTOMATIC,DIRECT); // NEED TUNING
 
+  motor_setMotorPWM(&motor_rw, 0);
+  motor_setMotorPWM(&motor_lw, 0);
 
-  PIDParams_st pid_params_lw;
-  	pid_params_lw.Kp = 1.12;
-  	pid_params_lw.Ki = 0.002;
-  	pid_params_lw.Kd = 30;
-  	pid_params_lw.outmin = 20;
-  	pid_params_lw.outmax = 100;
-  	pid_params_lw.enable_anti_windup = 1;
-  	pid_params_lw.anti_windup_error = 40;
-  	pid_params_lw.error_sum = 0;
-  	pid_params_lw.prev_error = 0;
-  	pid_params_lw.prev_time = 0;
-  	pid_params_lw.setpoint = 200;
-  PIDParams_st pid_params_rw;
-	pid_params_rw.Kp = 1.12;
-	pid_params_rw.Ki = 0.002;
-	pid_params_rw.Kd = 30;
-	pid_params_rw.outmin = 20;
-	pid_params_rw.outmax = 100;
-	pid_params_rw.enable_anti_windup = 1;
-	pid_params_rw.anti_windup_error = 40;
-  	pid_params_rw.error_sum = 0;
-  	pid_params_rw.prev_error = 0;
-  	pid_params_rw.prev_time = 0;
-control_st control_p;
-	control_p.k1 = 0.2;
-	control_p.k2 = 120;
-	control_p.k2 = 0.8;
-//	motor_setMotorPWM(&motor_1,50);
-//	motor_setMotorPWM(&motor_2,50);
-	PIDParams_st* ps[] = {&pid_params_lw, &pid_params_rw};
-	motorParams_st* mtrs[] = {&motor_1, &motor_2};
 
   /* USER CODE END 2 */
 
@@ -277,7 +308,28 @@ control_st control_p;
   while (1)
   {
     /* USER CODE END WHILE */
-	  linesensor_read(&line_sensor,&motor_1);
+	  if (control_p.state == stop){
+		  for(int i =0;i<3;i++){
+				  switch(i){
+					  case 0:
+						  colorsensor_setFilter(&color_sensor, f_red);
+						  HAL_Delay(2);
+						  color_sensor.rgb[0] = frequency;
+						  break;
+					  case 1:
+						  colorsensor_setFilter(&color_sensor, f_green);
+						  HAL_Delay(2);
+						  color_sensor.rgb[1] = frequency;
+						  break;
+					  case 2:
+						  colorsensor_setFilter(&color_sensor, f_blue);
+						  HAL_Delay(2);
+						  color_sensor.rgb[2] = frequency;
+						  break;
+				  }
+			  }
+	  }
+//	  colorsensor_detectColor(&color_sensor);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -369,6 +421,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -377,6 +430,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -385,6 +439,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = ADC_REGULAR_RANK_4;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -393,6 +448,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = ADC_REGULAR_RANK_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -425,7 +481,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 79;
+  htim1.Init.Prescaler = 80-1;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 200-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -495,6 +551,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_IC_InitTypeDef sConfigIC = {0};
 
@@ -502,11 +559,20 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = 8-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 65535;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_IC_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
@@ -554,7 +620,7 @@ static void MX_TIM3_Init(void)
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
@@ -603,7 +669,7 @@ static void MX_TIM4_Init(void)
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 65535;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
@@ -660,14 +726,27 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
+                          |GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PB10 PB11 PB12 PB13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PB10 PB11 PB12 PB13
+                           PB3 PB4 PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
+                          |GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 

@@ -11,7 +11,7 @@
 float pid_calculate(PIDParams_st *p)
 {
 	float error=(p->setpoint - p->current_value);
-	uint32_t now = HAL_GetTick()/1000; // to s
+	float now = HAL_GetTick(); // to s
 	float Ts = now - p->prev_time;
 	p->error_sum += error*Ts;
 	float out;
@@ -31,13 +31,9 @@ float pid_calculate(PIDParams_st *p)
 	}
 
 	if (out > p->outmax){
-		p->is_sat = 1;
 		out = p->outmax;
 	} else if(out < p->outmin){
-		p->is_sat = 1;
 		out = p->outmin;
-	}else{
-		p->is_sat = 0;
 	}
 
 	p->prev_error = error;

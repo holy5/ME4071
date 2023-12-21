@@ -7,52 +7,52 @@
 
 #include "color_sensor.h"
 
-
 void color_sensor_init(colorSensor_st* p){
+	// Scaling 20%
 	  HAL_GPIO_WritePin(p->in_port_1, p->in_pins[0], GPIO_PIN_SET);
-	  HAL_GPIO_WritePin(p->in_port_1, p->in_pins[1], GPIO_PIN_SET);
+	  HAL_GPIO_WritePin(p->in_port_1, p->in_pins[1], GPIO_PIN_RESET);
 	  HAL_TIM_IC_Start_IT(p->htim, p->tim_channel);
 }
 
-void colorsensor_detectColor(colorSensor_st* p){
-	   for(int i = 0; i < 3; i++){
-	         switch (i){
-	            case 0:
-	               HAL_GPIO_WritePin(p->in_port_1, p->in_pins[2], GPIO_PIN_RESET);
-	               HAL_GPIO_WritePin(p->in_port_2, p->in_pins[3], GPIO_PIN_RESET);
-	               p->rgb[0] = HAL_TIM_ReadCapturedValue(p->htim, p->tim_channel);
-	               HAL_Delay(1);
-	               break;
-	            case 1:
-	               HAL_GPIO_WritePin(p->in_port_1, p->in_pins[2], GPIO_PIN_RESET);
-	               HAL_GPIO_WritePin(p->in_port_2, p->in_pins[3], GPIO_PIN_SET);
-	               p->rgb[2] = HAL_TIM_ReadCapturedValue(p->htim, p->tim_channel);
-	               HAL_Delay(1);
-	               break;
-	            case 2:
-	               HAL_GPIO_WritePin(p->in_port_1, p->in_pins[2], GPIO_PIN_SET);
-	               HAL_GPIO_WritePin(p->in_port_2, p->in_pins[3], GPIO_PIN_SET);
-	               p->rgb[1] = HAL_TIM_ReadCapturedValue(p->htim, p->tim_channel);
-	               HAL_Delay(1);
-	         }
-	      }
-	   uint16_t r = p->rgb[0];
-	   uint16_t g = p->rgb[1];
-	   uint16_t b = p->rgb[2];
+void colorsensor_setFilter(colorSensor_st* p, uint8_t filter){
+	switch(filter){
+		case(F_RED):
+			HAL_GPIO_WritePin(p->in_port_1, p->in_pins[2], GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(p->in_port_2, p->in_pins[3], GPIO_PIN_RESET);
+			break;
+		case(F_GREEN):
+			HAL_GPIO_WritePin(p->in_port_1, p->in_pins[2], GPIO_PIN_SET);
+			HAL_GPIO_WritePin(p->in_port_2, p->in_pins[3], GPIO_PIN_SET);
+			break;
+		case(F_BLUE):
+			HAL_GPIO_WritePin(p->in_port_1, p->in_pins[2], GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(p->in_port_2, p->in_pins[3], GPIO_PIN_SET);
+			break;
+		case(F_CLEAR):
+			HAL_GPIO_WritePin(p->in_port_1, p->in_pins[2], GPIO_PIN_SET);
+			HAL_GPIO_WritePin(p->in_port_2, p->in_pins[3], GPIO_PIN_RESET);
+			break;
+	}
 
-	   if ((r> 800 && r< 2100) &&  (b > 350 && b < 780) &&  (g > 650 && g < 1700) && ((r> g)) && (g > b)){
-	   		p->color = 'r';
-	   	}
-	   	      // Green
-	   	else if ((r> 400 && r< 900) &&  (b > 450 && b < 780) &&  (g > 650 && g < 1750)&& ((g > r) && (g > b))){
-	   		p->color = 'g';
-	   	}
-	   	      //Blue
-	   	else if((r> 590 && r< 1250) &&  (b > 1000 && b < 2000) &&  (g > 280 && g < 980) && ((b < r)) && (r> g)){
-	   		p->color = 'b';
-	   	}
-	   	else {
-	   		p->color='n'; // null
-	   	}
+}
+
+void colorsensor_detectColor(colorSensor_st* p){
+	uint16_t r =p->rgb[0];
+	uint16_t g =p->rgb[1];
+	uint16_t b =p->rgb[2];
+
+	enum Color red = C_RED;
+	enum Color green = C_GREEN;
+	enum Color none = C_NONE;
+
+	if(g>6000 && g>r && g>b){
+		p->color= green;
+	}
+	else if (g>3000 && b<2000 && r<2000){
+		p->color = red;
+	}else{
+		p->color = none;
+	}
+
 };
 
