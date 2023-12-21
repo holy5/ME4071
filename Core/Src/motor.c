@@ -21,6 +21,7 @@ void motor_init(motorParams_st* mp){
 void motor_stopMotor(motorParams_st* mp){
 	HAL_GPIO_WritePin(mp->in_port, mp->in1_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(mp->in_port, mp->in2_pin, GPIO_PIN_RESET);
+	motor_setDutyCycle(mp,0);
 }
 
 void motor_standByMode(void){
@@ -85,5 +86,6 @@ void motor_resetEncoderCount(motorParams_st* p){
 	p->scount = 0;
 	p->ucount =0;
 	p->prev_pos = 0;
+	p->distance = 0;
 }
 

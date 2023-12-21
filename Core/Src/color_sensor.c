@@ -41,17 +41,14 @@ void colorsensor_detectColor(colorSensor_st* p){
 	uint16_t g =p->rgb[1];
 	uint16_t b =p->rgb[2];
 
-	enum Color red = C_RED;
-	enum Color green = C_GREEN;
-	enum Color none = C_NONE;
 
-	if(g>6000 && g>r && g>b){
-		p->color= green;
+	if(g>6000 && g>r && g>b && r<6000 && b <6000){
+		p->color= C_GREEN;
 	}
-	else if (g>3000 && b<2000 && r<2000){
-		p->color = red;
+	else if(r>g && r>b  && r>7000 && g<4000 && b<4000){
+		p->color = C_RED;
 	}else{
-		p->color = none;
+		p->color = C_NONE;
 	}
 
 };

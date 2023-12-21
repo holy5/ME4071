@@ -27,15 +27,16 @@ typedef struct{
 typedef struct{
 	float k1,k2,k3;
 	enum Branch branch;
-	uint8_t stopTime;
+	uint16_t stopTime;
 	enum RobotState state;
+	float test;
 }control_st;
 
 
 
 void control_lineTracking(control_st* ctrlp,PIDControl* pidps[], motorParams_st* mps[], lineSensorParams_st* lp, colorSensor_st* cp);
 
-void control_steerToBranch(control_st* ctrlp, motorParams_st* mp,lineSensorParams_st* lp);
+//void control_steerToBranch(control_st* ctrlp, motorParams_st* mp,lineSensorParams_st* lp);
 
 //wheelSpeed_st control_calculateWheelsRPM(control_st* ctrlp,float yError, float angleError);
 

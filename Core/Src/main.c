@@ -75,6 +75,18 @@ static void MX_TIM4_Init(void);
 FilterTypeDef filter_struct_1;
 FilterTypeDef filter_struct_2;
 
+enum ColorFilter f_red = F_RED;
+enum ColorFilter f_green = F_GREEN;
+enum ColorFilter f_blue = F_BLUE;
+
+enum Color c_red = C_RED;
+enum Color c_green = C_GREEN;
+enum Color c_blue = C_BLUE;
+enum Color c_none = C_NONE;
+
+enum RobotState stop = STOP;
+enum RobotState run = RUN;
+
 motorParams_st motor_rw={
 	.pulse_per_rev = 234,
 	.ucount=0,
@@ -116,7 +128,7 @@ colorSensor_st color_sensor = {
 	.rgb[0]=0,
 	.rgb[1]=0,
 	.rgb[2]=0,
-	.color='n',
+	.color=C_NONE,
 	.htim = &htim2
 };
 lineSensorParams_st line_sensor ={
@@ -174,8 +186,9 @@ control_st control_p ={
 	.k1 = 0,
 	.k2 = 0.25,
 	.k3 = 0.1,
-	.branch = 'n',
-	.stopTime = 0
+	.branch = EMPTY,
+	.stopTime = 0,
+	.state = RUN
 };
 
 	PIDControl* ps[] = {&pid_lw, &pid_rw};
@@ -186,15 +199,6 @@ control_st control_p ={
 	uint8_t timer_overflow=0;
 	uint16_t frequency;
 	float refClock = 8e6/8;
-	enum ColorFilter f_red = F_RED;
-	enum ColorFilter f_green = F_GREEN;
-	enum ColorFilter f_blue = F_BLUE;
-
-//	enum Color c_red = C_RED;
-//	enum Color c_green = C_GREEN;
-//	enum Color c_blue = C_BLUE;
-
-	enum RobotState stop = STOP;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	UNUSED(htim);
@@ -209,9 +213,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 			motor_rw.rpm = Moving_Average_Compute(motor_rw.rpm, &filter_struct_1);
 			motor_lw.rpm = Moving_Average_Compute(motor_lw.rpm, &filter_struct_2);
 
-			motor_odometry(&motor_lw);
-//			linesensor_read(&line_sensor);
-//			control_lineTracking(&control_p, ps, mtrs, &line_sensor);
+			linesensor_read(&line_sensor);
+			control_lineTracking(&control_p, ps, mtrs, &line_sensor,&color_sensor);
+//			pid_lw.setpoint = 100;
+//			pid_rw.setpoint = 100;
+//			pid_lw.input = motor_lw.rpm;
+//			pid_rw.input = motor_rw.rpm;
+//
+//			PIDCompute(&pid_lw);
+//			PIDCompute(&pid_rw);
+//
+//			motor_setMotorPWM(&motor_lw, pid_lw.output);
+//			motor_setMotorPWM(&motor_rw, pid_rw.output);
+
 			timer_overflow = 0;
 		}
 	}
@@ -308,29 +322,30 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  if (control_p.state == stop){
-		  for(int i =0;i<3;i++){
-				  switch(i){
-					  case 0:
-						  colorsensor_setFilter(&color_sensor, f_red);
-						  HAL_Delay(2);
-						  color_sensor.rgb[0] = frequency;
-						  break;
-					  case 1:
-						  colorsensor_setFilter(&color_sensor, f_green);
-						  HAL_Delay(2);
-						  color_sensor.rgb[1] = frequency;
-						  break;
-					  case 2:
-						  colorsensor_setFilter(&color_sensor, f_blue);
-						  HAL_Delay(2);
-						  color_sensor.rgb[2] = frequency;
-						  break;
-				  }
-			  }
-	  }
-//	  colorsensor_detectColor(&color_sensor);
-    /* USER CODE BEGIN 3 */
+//	  if (control_p.state == STOP && control_p.stopTime == 0){
+////		  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1 | TIM_CHANNEL_2);
+//		  for(int i =0;i<3;i++){
+//				  switch(i){
+//					  case 0:
+//						  colorsensor_setFilter(&color_sensor, f_red);
+//						  HAL_Delay(2);
+//						  color_sensor.rgb[0] = frequency;
+//						  break;
+//					  case 1:
+//						  colorsensor_setFilter(&color_sensor, f_green);
+//						  HAL_Delay(2);
+//						  color_sensor.rgb[1] = frequency;
+//						  break;
+//					  case 2:
+//						  colorsensor_setFilter(&color_sensor, f_blue);
+//						  HAL_Delay(2);
+//						  color_sensor.rgb[2] = frequency;
+//						  break;
+//				  }
+//			  }
+//		  colorsensor_detectColor(&color_sensor);
+//	  }
+//    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
