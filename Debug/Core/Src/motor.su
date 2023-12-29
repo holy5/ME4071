@@ -5,5 +5,5 @@
 ../Core/Src/motor.c:31:6:motor_setMotorPWM	16	static
 ../Core/Src/motor.c:48:6:motor_readEncoder	16	static
 ../Core/Src/motor.c:54:6:motor_calculateRPM	32	static
-../Core/Src/motor.c:79:6:motor_odometry	32	static
-../Core/Src/motor.c:84:6:motor_resetEncoderCount	16	static
+../Core/Src/motor.c:79:6:motor_odometry	24	static
+../Core/Src/motor.c:85:6:motor_resetEncoderCount	16	static

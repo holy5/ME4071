@@ -23,15 +23,20 @@ static wheelSpeed_st control_calculateWheelsRPM(control_st* ctrlp,float yError, 
 
 static void control_steerToBranch(control_st* ctrlp, motorParams_st* mps[]){
 	if(ctrlp->branch == UPPER){
-		motor_setMotorPWM(mps[1],80);
-		motor_setMotorPWM(mps[0],40);
+		motor_setMotorPWM(mps[1],90);
+		motor_setMotorPWM(mps[0],20);
 	}else if (ctrlp->branch == LOWER){
-		motor_setMotorPWM(mps[0],100);
-		motor_setMotorPWM(mps[1],0);
+		motor_setMotorPWM(mps[0], 50);
+		motor_setMotorPWM(mps[1],20);
 	}
 }
 
-uint16_t count;
+uint16_t count=0;
+uint16_t red_count = 0;
+uint16_t green_count = 0;
+float current_pos;
+uint16_t hinch_flag=0;
+
 
 void control_lineTracking(control_st* ctrlp,PIDControl* pidps[], motorParams_st* mps[], lineSensorParams_st* lp, colorSensor_st* cp){
 
@@ -54,26 +59,47 @@ void control_lineTracking(control_st* ctrlp,PIDControl* pidps[], motorParams_st*
 	}else{
 		motor_odometry(mps[0]);
 		motor_odometry(mps[1]);
-		if (count_white <=2 && mps[0]->distance > 1800){
+		float avg_distance = (mps[0]->distance + mps[1]->distance)/2;
+		float eol_stop_distance = 2000 + 500 + 500 * PI +300 + 2000 + 30;
+		if(avg_distance > eol_stop_distance){
+			motor_stopMotor(mps[0]);
+			motor_stopMotor(mps[1]);
+		}else{
+		if (utils_inRange(avg_distance, 1970, 2020)){
 			if (ctrlp->stopTime == 0){
 				motor_stopMotor(mps[0]);
 				motor_stopMotor(mps[1]);
-//				ctrlp->state = STOP;
-				//				if(cp->color == C_RED){
-				//					ctrlp->branch = UPPER;
-				//				} else if(cp->color == C_GREEN){
+				ctrlp->state = STOP;
+				if(cp->color == C_RED){
+					red_count++;
+				}else if(cp->color == C_GREEN){
+					green_count++;
+				}
+				if(green_count > 10 || red_count > 10){
+					if(green_count > red_count){
+						ctrlp->branch = LOWER;
+					}else{
+						ctrlp->branch = UPPER;
+					}
+					red_count = 0;
+					green_count = 0;
+				}
 				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-				ctrlp->branch = LOWER;
-				//				}
 //				motor_resetEncoderCount(mps[0]);
 //				motor_resetEncoderCount(mps[1]);
-				ctrlp->state = RUN;
 				if(ctrlp->branch != EMPTY){
+					hinch_flag = 1;
+					ctrlp->state = RUN;
 					ctrlp->stopTime += 1;
+				}
+				if(hinch_flag == 1){
+					motor_setMotorPWM(mps[0],50);
+					motor_setMotorPWM(mps[1],50);
 				}
 			}
 			}
 			else{
+				hinch_flag = 0;
 				wheelSpeed_st speeds = control_calculateWheelsRPM(ctrlp, lp->y_error , lp->angle_error);
 				pidps[0]->setpoint = speeds.left_wheel_speed;
 				pidps[1]->setpoint = speeds.right_wheel_speed;
@@ -81,13 +107,20 @@ void control_lineTracking(control_st* ctrlp,PIDControl* pidps[], motorParams_st*
 				pidps[1]->input = mps[1]->rpm;
 				PIDCompute(pidps[0]);
 				PIDCompute(pidps[1]);
-				if((lp->sensor_values[1] > 3000 && lp->sensor_values[2]>3000 && lp->sensor_values[3]>3000) || (count_white <= 2 && mps[0]->distance > 2600)){
-					if (count < 20){
+				float pos = 2000 + 500 + 500 * PI + 200;
+				uint16_t range = 70;
+				uint16_t offset = 230;
+				uint16_t range_2 = 90;
+				uint16_t offset_2 = 210;
+				if (utils_inRange(avg_distance,pos - offset,pos - offset+range) && ctrlp->branch == LOWER){
 					control_steerToBranch(ctrlp, mps);
-					count++;
-					}else{
-						count = 0;
-					}
+
+//					motor_stopMotor(mps[0]);
+//					motor_stopMotor(mps[1]);
+				}else if (utils_inRange(avg_distance,pos - offset_2,pos - offset_2+range_2) && ctrlp->branch == UPPER){
+					control_steerToBranch(ctrlp, mps);
+//					motor_stopMotor(mps[0]);
+//					motor_stopMotor(mps[1]);
 				}else{
 				motor_setMotorPWM(mps[0],pidps[0]->output);
 				motor_setMotorPWM(mps[1],pidps[1]->output);
@@ -96,7 +129,7 @@ void control_lineTracking(control_st* ctrlp,PIDControl* pidps[], motorParams_st*
 				}
 			}
 	}
-
+	}
 }
 
 

@@ -42,10 +42,10 @@ void colorsensor_detectColor(colorSensor_st* p){
 	uint16_t b =p->rgb[2];
 
 
-	if(g>6000 && g>r && g>b && r<6000 && b <6000){
+	if(g>5000 && g>r && g>b && r<6000 && b <6000){
 		p->color= C_GREEN;
 	}
-	else if(r>g && r>b  && r>7000 && g<4000 && b<4000){
+	else if(r>g && r>b  && r>8000 && g<5500 && b<5500){
 		p->color = C_RED;
 	}else{
 		p->color = C_NONE;

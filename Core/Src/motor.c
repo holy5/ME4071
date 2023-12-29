@@ -78,7 +78,8 @@ void motor_calculateRPM(motorParams_st* mp, int32_t current_time){
 
 void motor_odometry(motorParams_st* p){
 	// Don't worry about overflow, as calculated the car can move 27 meter before overflow (assume the wheels not slipped)
-	float distance = ((float)p->position / p->pulse_per_rev)* WHEEL_RADIUS * 2 * PI;;
+	float rev_pos  = 65355/4 - (float) p->position; // Encoder read been reversed
+	float distance = (rev_pos / p->pulse_per_rev)* WHEEL_RADIUS * 2 * PI;;
 	p->distance = distance * 1000; // To mm
 }
 void motor_resetEncoderCount(motorParams_st* p){

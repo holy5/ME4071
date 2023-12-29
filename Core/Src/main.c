@@ -102,7 +102,7 @@ motorParams_st motor_rw={
 };
 
 motorParams_st motor_lw ={
-	.pulse_per_rev = 495,
+	.pulse_per_rev = 234,
 	.ucount=0,
 	.scount=0,
 	.prev_time=0,
@@ -184,8 +184,8 @@ PIDControl pid_rw = {
 
 control_st control_p ={
 	.k1 = 0,
-	.k2 = 0.25,
-	.k3 = 0.1,
+	.k2 = 0.2,
+	.k3 = 0.08,
 	.branch = EMPTY,
 	.stopTime = 0,
 	.state = RUN
@@ -308,7 +308,8 @@ int main(void)
   color_sensor.htim = &htim2;
 
 
-  PIDInit(&pid_lw,1.8,0.8,0.1,0.024,10,100,AUTOMATIC,DIRECT);
+//  PIDInit(&pid_lw,1.8,0.8,0.1,0.024,10,100,AUTOMATIC,DIRECT);
+  PIDInit(&pid_lw,1.3,0.35,0.08,0.024,10,100,AUTOMATIC,DIRECT);
   PIDInit(&pid_rw,1.3,0.35,0.08,0.024,10,100,AUTOMATIC,DIRECT); // NEED TUNING
 
   motor_setMotorPWM(&motor_rw, 0);
@@ -322,29 +323,29 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-//	  if (control_p.state == STOP && control_p.stopTime == 0){
+	  if (control_p.state == STOP && control_p.stopTime == 0){
 ////		  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1 | TIM_CHANNEL_2);
-//		  for(int i =0;i<3;i++){
-//				  switch(i){
-//					  case 0:
-//						  colorsensor_setFilter(&color_sensor, f_red);
-//						  HAL_Delay(2);
-//						  color_sensor.rgb[0] = frequency;
-//						  break;
-//					  case 1:
-//						  colorsensor_setFilter(&color_sensor, f_green);
-//						  HAL_Delay(2);
-//						  color_sensor.rgb[1] = frequency;
-//						  break;
-//					  case 2:
-//						  colorsensor_setFilter(&color_sensor, f_blue);
-//						  HAL_Delay(2);
-//						  color_sensor.rgb[2] = frequency;
-//						  break;
-//				  }
-//			  }
-//		  colorsensor_detectColor(&color_sensor);
-//	  }
+		  for(int i =0;i<3;i++){
+				  switch(i){
+					  case 0:
+						  colorsensor_setFilter(&color_sensor, f_red);
+						  HAL_Delay(2);
+						  color_sensor.rgb[0] = frequency;
+						  break;
+					  case 1:
+						  colorsensor_setFilter(&color_sensor, f_green);
+						  HAL_Delay(2);
+						  color_sensor.rgb[1] = frequency;
+						  break;
+					  case 2:
+						  colorsensor_setFilter(&color_sensor, f_blue);
+						  HAL_Delay(2);
+						  color_sensor.rgb[2] = frequency;
+						  break;
+				  }
+			  }
+		  colorsensor_detectColor(&color_sensor);
+	  }
 //    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

@@ -17,7 +17,7 @@ float linesensor_calculateYError(lineSensorParams_st* p)
 }
 
 static float linesensor_calulateAngleError(lineSensorParams_st* p){
-	return (linesensor_calculateYError(p) - 0.6986)/(float)0.7703 + 1.7;
+	return (linesensor_calculateYError(p) - 0.6986)/(float)0.7703 + 1.7 + 8.32;
 }
 
 //static float linesensor_calculateDs(motorParams_st* mp, lineSensorParams_st* p){
